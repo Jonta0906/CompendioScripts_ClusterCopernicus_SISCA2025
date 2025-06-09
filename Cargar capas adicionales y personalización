@@ -1,0 +1,79 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/// CAPAS ADICIONALES ///// Recuerde tener estas capas en el ASSET O BLOQUEE ESTE SEGMENTO
+
+var Mascara = ee.FeatureCollection("projects/gee-joa/assets/Mascara");
+// Estilo: contorno negro, sin relleno, grosor 2
+var estilo = {
+  color: '000000',       // color del borde: negro
+  fillColor: '00000000', // sin relleno (transparente)
+  width: 2               // grosor del borde
+};
+// Aplicar estilo y mostrar en el mapa
+Map.addLayer(Mascara.style(estilo), {}, 'Mascara');
+// Centrar el mapa en el polígono
+Map.centerObject(Mascara);
+
+
+// Cargar las capas
+var PotInunda_CNE = ee.FeatureCollection("RUTA DEL ASSET");
+var AsentInform_MIVAH = ee.FeatureCollection("RUTA DEL ASSET");
+var ASP_SINAC = ee.FeatureCollection("RUTA DEL ASSET");
+var FallasCuat_CNE = ee.FeatureCollection("RUTA DEL ASSET");
+var CoroDesliza_CNE= ee.FeatureCollection("RUTA DEL ASSET");
+
+// Estilos por temática
+var estiloInundacion = {color: '00FFFF', fillColor: '00FFFF', width: 2}; // celeste
+var estiloAsentamientos = {color: 'FF00FF', fillColor: 'FF00FF', width: 2}; // fucsia
+var estiloProteccion = {color: 'CCFF00', fillColor: 'CCFF00', width: 2}; // verde lima
+var estiloFallas = {color: 'FF0000', fillColor: '00000000', width: 2}; // rojo
+var estiloCorona = {color: '8B4513', fillColor: '00000000', width: 2}; // café
+
+// Agregar capas al mapa con estilo
+Map.addLayer(PotInunda_CNE.style(estiloInundacion), {}, 'Potencial Inundación');
+Map.addLayer(AsentInform_MIVAH.style(estiloAsentamientos), {}, 'Asentamientos Informales');
+Map.addLayer(ASP_SINAC.style(estiloProteccion), {}, 'Áreas de Protección');
+Map.addLayer(FallasCuat_CNE.style(estiloFallas), {}, 'Fallas Geológicas');
+Map.addLayer(CoroDesliza_CNE.style(estiloCorona), {}, 'Corona de Deslizamiento');
+
+
+// Crear leyenda
+var legend = ui.Panel({
+  style: {
+    position: 'bottom-left',
+    padding: '8px 15px'
+  }
+});
+
+legend.add(ui.Label({
+  value: 'Simbología',
+  style: {fontWeight: 'bold', fontSize: '16px', margin: '0 0 8px 0'}
+}));
+
+// Función para agregar elementos a la leyenda
+function agregarElemento(color, nombre) {
+  var colorBox = ui.Label('', {
+    backgroundColor: '#' + color,
+    padding: '8px',
+    margin: '0 0 4px 0'
+  });
+
+  var description = ui.Label(nombre, {margin: '0 0 4px 6px'});
+
+  legend.add(ui.Panel([colorBox, description], ui.Panel.Layout.Flow('horizontal')));
+}
+
+// Agregar cada elemento
+agregarElemento('00FFFF', 'Potencial de Inundación');
+agregarElemento('FF00FF', 'Asentamientos Informales');
+agregarElemento('CCFF00', 'Áreas de Protección');
+agregarElemento('FF0000', 'Fallas Geológicas');
+agregarElemento('8B4513', 'Corona de Deslizamiento');
+
+// Mostrar leyenda
+Map.add(legend);
+
+
+
+
