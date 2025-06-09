@@ -1,0 +1,94 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////// Procedimiento de calculo ////////
+
+// 1. Definir el Área de Interés cargada como shapefile
+var AOI = AOI.geometry(); // Asegúrate de que AOI esté cargado como ee.FeatureCollection CON SU DEBIDA RUTA
+
+// 2. Visualizar el AOI
+Map.addLayer(AOI, {color: 'black'}, 'AOI shapefile');
+
+// 3. Imagen Sentinel-2 recortada
+var imagen = ee.ImageCollection('COPERNICUS/S2')
+  .filterDate('2024-03-01', '2025-01-15')
+  .filterBounds(AOI)
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .median()
+  .clip(AOI);
+
+var visParams = {
+  bands: ['B5', 'B4', 'B3'],
+  min: 1205.84,
+  max: 3118.16
+};
+
+Map.centerObject(AOI, 12);
+Map.addLayer(imagen, visParams, 'Sentinel-2 (recortada)');
+
+// 4. GHSL (Global Human Settlement Layer)
+var ghsl = ee.Image('JRC/GHSL/P2023A/GHS_BUILT_C/2018')
+  .select('built_characteristics')
+  .clip(AOI)
+  .gt(0)
+  .selfMask();
+
+Map.addLayer(ghsl, {palette: ['#A8DBDB'], opacity: 0.6}, 'GHSL (2018)');
+
+// 5. Dynamic World 2024 – Clase 'built'
+var dw = ee.ImageCollection('GOOGLE/DYNAMICWORLD/V1')
+  .filterDate('2024-01-01', '2024-12-31')
+  .filterBounds(AOI)
+  .mean();
+
+var dwBuilt = dw.select('built').gt(0.2).selfMask().clip(AOI);
+Map.addLayer(dwBuilt, {palette: ['#4575b4'], opacity: 0.6}, 'Dynamic World (2024)');
+
+// 6. ESA WorldCover 2020 – Clase urbana (valor 50)
+var worldcover = ee.ImageCollection('ESA/WorldCover/v100')
+  .first()
+  .clip(AOI);
+
+var wcBuilt = worldcover.eq(50).selfMask().clip(AOI);
+Map.addLayer(wcBuilt, {palette: ['#66bd63'], opacity: 0.6}, 'ESA WorldCover (2020)');
+
+// 7. Índice combinado de construcción (OR lógico)
+var builtCombined = ghsl.unmask(0)
+  .or(dwBuilt.unmask(0))
+  .or(wcBuilt.unmask(0))
+  .selfMask()
+  .rename('Urban_Combined');
+
+Map.addLayer(builtCombined, {palette: ['#ff0000'], opacity: 0.7}, 'Mancha Urbana Combinada');
+
+// 8. Cálculo de área total urbana dentro del AOI (en hectáreas)
+var areaUrbana = builtCombined
+  .multiply(ee.Image.pixelArea()) // en m²
+  .divide(10000); // convertir a hectáreas
+
+var areaTotal = areaUrbana.reduceRegion({
+  reducer: ee.Reducer.sum(),
+  geometry: AOI,
+  scale: 10,
+  maxPixels: 1e13
+});
+
+print('Área total urbana en hectáreas:', areaTotal);
+
+// 9. Exportación del índice combinado a Google Drive
+Export.image.toDrive({
+  image: builtCombined,
+  description: 'Indice_Combinado_Urbano',
+  folder: 'EarthEngineExports',
+  fileNamePrefix: 'indice_urbano_combinado',
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13
+});
+
+Export.table.toDrive({
+  collection: ee.FeatureCollection([ee.Feature(AOI)]),
+  description: 'AOI',
+  fileFormat: 'SHP',
+  folder: 'EarthEngineExports'
+});
