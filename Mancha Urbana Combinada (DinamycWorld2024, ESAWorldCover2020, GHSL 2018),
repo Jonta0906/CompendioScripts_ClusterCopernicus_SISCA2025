@@ -4,7 +4,7 @@
 /////// Procedimiento de calculo ////////
 
 // 1. Definir el Área de Interés cargada como shapefile
-var AOI = AOI.geometry(); // Asegúrate de que AOI esté cargado como ee.FeatureCollection CON SU DEBIDA RUTA
+var AOI = AOI.geometry(); // Asegúrate de que AOI esté cargado como ee.FeatureCollection CON SU DEBIDA RUTA en el proyecto
 
 // 2. Visualizar el AOI
 Map.addLayer(AOI, {color: 'black'}, 'AOI shapefile');
